@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 const Hello = () => {
   const [data, setData] = useState('')
   useEffect(() => {
-    const fetchPromise = fetch('Job/Index');
-    fetchPromise.then(response => {
-      setData(response.data)
-    })
+    fetch('job')
+      .then((results) => {
+        return results.json()
+      })
+      .then(data => {
+        setData(data)
+      })
   }, [])
 
   return (
