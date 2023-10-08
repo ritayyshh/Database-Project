@@ -2,7 +2,7 @@
 {
     public class JobsModel
     {
-        public string? job_id { get; set; }
+        public int job_id { get; set; }
         public string? company_id { get; set; }
         public string? job_title { get; set; }
         public string? job_description { get; set;}
