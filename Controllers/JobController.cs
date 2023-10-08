@@ -8,5 +8,9 @@ namespace OnlineJobPortal.Controllers
         {
             return View();
         }
+        public IActionResult Test()
+        {
+            return View();
+        }
     }
 }
