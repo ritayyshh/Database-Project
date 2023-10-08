@@ -1,6 +1,4 @@
-import React, {Component} from "react";
 import { useEffect, useState } from "react";
-
 
 const Hello = () => {
   const [data, setData] = useState('')
