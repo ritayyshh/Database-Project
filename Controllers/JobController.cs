@@ -2,15 +2,19 @@
 
 namespace OnlineJobPortal.Controllers
 {
-    public class JobController : Controller
+    [ApiController]
+    [Route("[Job]")]
+    public class JobController : ControllerBase
     {
-        public IActionResult Index()
+        private readonly ILogger<JobController> _logger;
+        public JobController(ILogger<JobController> logger)
         {
-            return View();
+            _logger = logger;
         }
-        public IActionResult Test()
+        [HttpGet]
+        public string Index()
         {
-            return View();
+            return "Test view for Job controller";
         }
     }
 }
