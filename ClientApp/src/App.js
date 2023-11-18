@@ -19,6 +19,7 @@ import {
 import { InputGroup, InputGroupText, Input} from 'reactstrap';
 import { Container, Row, Col } from 'reactstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './StyleSheet.css'
 
 
 const App = (args) => {
