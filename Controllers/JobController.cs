@@ -4,7 +4,7 @@ using OnlineJobPortal.Models;
 namespace OnlineJobPortal.Controllers
 {
     [ApiController]
-    [Route("[jobcontroller]")]
+    [Route("[controller]")]
     public class JobController : ControllerBase
     {
         private static readonly IEnumerable<JobsModel> Jobs = new[]

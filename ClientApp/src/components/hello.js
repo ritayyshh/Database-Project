@@ -4,7 +4,7 @@ const Hello = () => {
   const [data, setData] = useState(null)
   useEffect(() => {
     fetch('job/12345')
-      .then((results) => {
+        .then((results) => {
         return results.json()
       })
       .then(data => {

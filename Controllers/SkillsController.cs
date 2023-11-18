@@ -3,7 +3,7 @@ using OnlineJobPortal.Models;
 namespace OnlineJobPortal.Controllers
 {
     [ApiController]
-    [Route("[skillscontroller]")]
+    [Route("skillscontroller")]
     public class SkillsController : ControllerBase
     {
         private static readonly IEnumerable<SkillsModel> Skills = new[]

@@ -3,7 +3,7 @@ using OnlineJobPortal.Models;
 namespace OnlineJobPortal.Controllers
 {
     [ApiController]
-    [Route("[applicationcontroller]")]
+    [Route("applicationcontroller")]
     public class ApplicationController : ControllerBase
     {
         private static readonly IEnumerable<ApplicationModel> Applications = new[]
@@ -20,5 +20,5 @@ namespace OnlineJobPortal.Controllers
             ApplicationModel[] applications = Applications.Where(i => i.application_id == application_id).ToArray();
             return applications;
         }
-            }
+        }
 }
