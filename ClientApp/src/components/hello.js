@@ -1,22 +1,46 @@
-import { useEffect, useState } from "react";
-
+import React, { useEffect, useState } from "react";
+import {
+    Accordion,
+    AccordionBody,
+    AccordionHeader,
+    AccordionItem,
+} from 'reactstrap';
 const Hello = () => {
+    const [open, setOpen] = useState('1');
+    const toggle = (id) => {
+        if (open === id) {
+            setOpen();
+        } else {
+            setOpen(id);
+        }
+    };
   const [data, setData] = useState(null)
   useEffect(() => {
-    fetch('job/12345')
+    fetch('job')
         .then((results) => {
-        return results.json()
+            return results.json();
       })
       .then(data => {
-          setData(data)
+          setData(data);
       })
   }, [])
 
     if (data != null) {
         return (
-            <>
-                <h1>{data[0].job_title}</h1>
-            </>
+            <div>
+                <Accordion open={open} toggle={toggle}>
+                    {data.map((d, i) => {
+                        return (
+                            <AccordionItem key={i}>
+                                <AccordionHeader targetId={`${i}`}>{d.job_title}</AccordionHeader>
+                                <AccordionBody accordionId={`${i}`}>
+                                    {d.job_description}
+                                </AccordionBody>
+                            </AccordionItem >
+                        );
+                    })}
+                </Accordion>
+            </div>
         )
     }
   

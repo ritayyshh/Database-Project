@@ -4,7 +4,7 @@ using OnlineJobPortal.Models;
 namespace OnlineJobPortal.Controllers
 {
     [ApiController]
-    [Route("[jobcontroller]")]
+    [Route("job")]
     public class JobController : ControllerBase
     {
         private static readonly IEnumerable<JobsModel> Jobs = new[]
@@ -50,6 +50,14 @@ namespace OnlineJobPortal.Controllers
         {
             JobsModel[] jobs = Jobs.Where(i => i.job_id == job_id).ToArray();
             return jobs;
+        }
+
+        [HttpGet]
+        
+        public JobsModel[] GetAll()
+        {
+            JobsModel[] jobs = Jobs.ToArray();
+            return jobs; ;
         }
     }
 }
