@@ -2,8 +2,7 @@
 
 const getAllJobs = () => {
     const response = axios.get('/job');
-    console.log(response);
-    response.then(res => {
+    console.log(response);    response.then(res => {
         console.log(typeof res)
     })
         
