@@ -8,7 +8,7 @@ using System.Transactions;
 
 namespace OnlineJobPortal.Controllers
 {
-    [Route("jobcontroller")]
+    [Route("[jobcontroller]")]
     [ApiController]
     public class JobController : ControllerBase
     {
@@ -18,7 +18,6 @@ namespace OnlineJobPortal.Controllers
             this.configuration = configuration;
         }
         [HttpGet]
-        [Route("GetAllJobs")]
         public string GetJobs()
         {
             SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());

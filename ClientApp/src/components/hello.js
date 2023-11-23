@@ -18,6 +18,7 @@ const Hello = () => {
   useEffect(() => {
     fetch('job')
         .then((results) => {
+            console.log(results);
             return results.json();
       })
       .then(data => {
