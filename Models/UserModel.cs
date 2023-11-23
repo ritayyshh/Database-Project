@@ -1,6 +1,8 @@
-﻿namespace OnlineJobPortal.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace OnlineJobPortal.Models
 {
-    public class UserModel
+    public class UserModel : IdentityUser
     {
         public string ?first_name {  get; set; }
         public string ?middle_name { get; set; }
