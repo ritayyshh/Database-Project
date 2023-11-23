@@ -9,7 +9,7 @@
         public string job_type { get; set;}
         public string job_location { get; set;}
         public int job_salary { get; set; }
-        public string job_post_date { get; set; }
+        public string job_posted_date { get; set; }
         public string job_deadline { get; set;}
     }
 }
