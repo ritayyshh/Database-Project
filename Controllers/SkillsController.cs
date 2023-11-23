@@ -1,23 +1,47 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OnlineJobPortal.Models;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Reflection;
+using System.Transactions;
+
 namespace OnlineJobPortal.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("skillscontroller")]
     public class SkillsController : ControllerBase
     {
-        private static readonly IEnumerable<SkillsModel> Skills = new[]
+        public readonly IConfiguration configuration;
+        public SkillsController(IConfiguration configuration)
         {
-            new SkillsModel
-            {
-                user_id = 1, skill_id = 1, skill_name = "Skill"
-            }
-        };
-        [HttpGet("{skill_id:int}")]
-        public SkillsModel[] Get(int skill_id)
-        {
-            SkillsModel[] skills = Skills.Where(i => i.skill_id == skill_id).ToArray();
-            return skills;
+            this.configuration = configuration;
         }
+        [HttpGet]
+        public string GetSkills()
+        {
+            SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
+            SqlDataAdapter da = new SqlDataAdapter("Select * from Skills", connection);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            List < SkillsModel > Skills = new List<SkillsModel> ();
+            if (dt.Rows.Count > 0)
+            {
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    SkillsModel skill = new SkillsModel();
+                    skill.user_id = Convert.ToInt32(dt.Rows[i]["user_id"]);
+                    skill.skill_id = Convert.ToInt32(dt.Rows[i]["skill_id"]);
+                    skill.skill_name = Convert.ToString(dt.Rows[i]["skill_name"]);
+                    Skills.Add(skill);
+                }
             }
+            if (Skills.Count > 0)
+                return JsonConvert.SerializeObject(Skills);
+            return JsonConvert.SerializeObject(null);
+        }
+    }
 }

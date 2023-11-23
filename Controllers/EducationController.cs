@@ -1,24 +1,49 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OnlineJobPortal.Models;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Reflection;
+using System.Transactions;
+
 namespace OnlineJobPortal.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("educationcontroller")]
     public class EducationController : ControllerBase
     {
-        private static readonly IEnumerable<EducationModel> Education = new[]
+        public readonly IConfiguration configuration;
+        public EducationController(IConfiguration configuration)
         {
-            new EducationModel
-            {
-                user_id = 1, education_id = 1, degree = "Bachelors", major = "Computer Science",
-                school = "FAST NUCES"
-            }
-        };
-        [HttpGet("{education_id:int}")]
-        public EducationModel[] Get(int education_id)
-        {
-            EducationModel[] education = Education.Where(i => i.education_id == education_id).ToArray();
-            return education;
+            this.configuration = configuration;
         }
+        [HttpGet]
+        public string GetEducation()
+        {
+            SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
+            SqlDataAdapter da = new SqlDataAdapter("Select * from Education", connection);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            List <EducationModel> Education = new List<EducationModel>();
+            if (dt.Rows.Count > 0)
+            {
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    EducationModel education = new EducationModel();
+                    education.user_id = Convert.ToInt32(dt.Rows[i]["user_id"]);
+                    education.education_id = Convert.ToInt32(dt.Rows[i]["education_id"]);
+                    education.degree = Convert.ToString(dt.Rows[i]["degree"]);
+                    education.major = Convert.ToString(dt.Rows[i]["major"]);
+                    education.school = Convert.ToString(dt.Rows[i]["school"]);
+                    Education.Add(education);
+                }
             }
+            if (Education.Count > 0)
+                return JsonConvert.SerializeObject(Education);
+            return JsonConvert.SerializeObject(null);
+        }
+    }
 }

@@ -1,25 +1,53 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OnlineJobPortal.Models;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Reflection;
+using System.Transactions;
+
 namespace OnlineJobPortal.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("usercontroller")]
     public class UserController : ControllerBase
     {
-        private static readonly IEnumerable<UserModel> Users = new[]
+        public readonly IConfiguration configuration;
+        public UserController(IConfiguration configuration)
         {
-            new UserModel
+            this.configuration = configuration;
+        }
+        [HttpGet]
+        public string GetUsers()
+        {
+            SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
+            SqlDataAdapter da = new SqlDataAdapter("Select * from Users", connection);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            List <UserModel> Users = new List<UserModel>();
+            if (dt.Rows.Count > 0)
             {
-                first_name = "First Name", middle_name = "Middle Name", last_name = "Last Name",
-                user_id = 1, username = "example123", email = "example123@gmail.com", password = "password",
-                user_type = "Job Seeker"
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    UserModel user = new UserModel();
+                    user.user_id = Convert.ToInt32(dt.Rows[i]["user_id"]);
+                    user.first_name = Convert.ToString(dt.Rows[i]["first_name"]);
+                    user.middle_name = Convert.ToString(dt.Rows[i]["middle_name"]);
+                    user.last_name = Convert.ToString(dt.Rows[i]["last_name"]);
+                    user.username = Convert.ToString(dt.Rows[i]["username"]);
+                    user.email = Convert.ToString(dt.Rows[i]["email"]);
+                    user.password = Convert.ToString(dt.Rows[i]["password"]);
+                    user.user_type = Convert.ToString(dt.Rows[i]["user_type"]);
+                    Users.Add(user);
+
+                }
             }
-        };
-        [HttpGet("{user_id:int}")]
-        public UserModel[] Get(int user_id)
-        {
-            UserModel[] users = Users.Where(i => i.user_id == user_id).ToArray();
-            return users;
+            if (Users.Count > 0)
+                return JsonConvert.SerializeObject(Users);
+            return JsonConvert.SerializeObject(null);
         }
     }
 }

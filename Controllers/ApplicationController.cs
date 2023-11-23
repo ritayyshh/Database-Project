@@ -1,24 +1,50 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OnlineJobPortal.Models;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Reflection;
+using System.Transactions;
+
 namespace OnlineJobPortal.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("applicationcontroller")]
     public class ApplicationController : ControllerBase
     {
-        private static readonly IEnumerable<ApplicationModel> Applications = new[]
+        public readonly IConfiguration configuration;
+        public ApplicationController(IConfiguration configuration)
         {
-            new ApplicationModel
+            this.configuration = configuration;
+        }
+        [HttpGet]
+        public string GetApplications()
+        {
+            SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
+            SqlDataAdapter da = new SqlDataAdapter("Select * from Application", connection);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            List<ApplicationModel> Applications = new List<ApplicationModel> ();
+            if (dt.Rows.Count > 0)
             {
-                application_id = 1, job_id = 1234, user_id = 1, application_status = "Pending", 
-                application_date = "017-nov-23", suitable_interview_time = "11 am Monday, 20 nov 23"
-            }
-        };
-        [HttpGet("{application_id:int}")]
-        public ApplicationModel[] Get(int application_id)
-        {
-            ApplicationModel[] applications = Applications.Where(i => i.application_id == application_id).ToArray();
-            return applications;
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                        ApplicationModel application = new ApplicationModel();
+                        application.application_id = Convert.ToInt32(dt.Rows[i]["application_id"]);
+                        application.job_id = Convert.ToInt32(dt.Rows[i]["job_id"]);
+                        application.user_id = Convert.ToInt32(dt.Rows[i]["user_id"]);
+                        application.application_status = Convert.ToString(dt.Rows[i]["application_status"]);
+                        application.application_date = Convert.ToString(dt.Rows[i]["application_date"]);
+                        application.suitable_interview_time = Convert.ToString(dt.Rows[i]["suitable_interview_time"]);
+                        Applications.Add(application);
+                    }
+                }
+            if (Applications.Count > 0)
+                return JsonConvert.SerializeObject(Applications);
+            return JsonConvert.SerializeObject(null);
         }
-        }
+    }
 }

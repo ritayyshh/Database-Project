@@ -1,24 +1,50 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OnlineJobPortal.Models;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Reflection;
+using System.Transactions;
+using static System.Net.Mime.MediaTypeNames;
+
 namespace OnlineJobPortal.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("companycontroller")]
     public class CompanyController : ControllerBase
     {
-        private static readonly IEnumerable<CompanyModel> Companies = new[]
+        public readonly IConfiguration configuration;
+        public CompanyController(IConfiguration configuration)
         {
-            new CompanyModel
+            this.configuration = configuration;
+        }
+        [HttpGet]
+        public string GetCompanies()
+        {
+            SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
+            SqlDataAdapter da = new SqlDataAdapter("Select * from Company", connection);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            List <CompanyModel> Companies = new List<CompanyModel> ();
+            if (dt.Rows.Count > 0)
             {
-                company_id = 1, company_name = "ABC Company", company_address = "ABC street",
-                company_website = "www.google.com", company_description = "Description"
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                        CompanyModel company = new CompanyModel();
+                        company.company_id = Convert.ToInt32(dt.Rows[i]["company_id"]);
+                        company.company_name = Convert.ToString(dt.Rows[i]["company_name"]);
+                        company.company_address = Convert.ToString(dt.Rows[i]["company_address"]);
+                        company.company_website = Convert.ToString(dt.Rows[i]["company_website"]);
+                        company.company_description = Convert.ToString(dt.Rows[i]["company_description"]);
+                        Companies.Add(company);
+                }
             }
-        };
-        [HttpGet("{company_id:int}")]
-        public CompanyModel[] Get(int company_id)
-        {
-            CompanyModel[] companies = Companies.Where(i => i.company_id == company_id).ToArray();
-            return companies;
+            if (Companies.Count > 0)
+                return JsonConvert.SerializeObject(Companies);
+            return JsonConvert.SerializeObject(null);
         }
     }
 }
