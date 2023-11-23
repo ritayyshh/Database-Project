@@ -1,3 +1,5 @@
+import axios from 'axios';
+import getAllJobs from './requests';
 import React, { useEffect, useState } from "react";
 import {
     Accordion,
@@ -16,13 +18,8 @@ const Hello = () => {
     };
   const [data, setData] = useState(null)
   useEffect(() => {
-    fetch('job')
-        .then((results) => {
-            console.log(results);
-            return results.json();
-      })
-      .then(data => {
-          setData(data);
+      axios.get('/job').then(res => {
+          setData(res.data);
       })
   }, [])
 

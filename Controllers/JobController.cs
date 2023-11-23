@@ -8,7 +8,7 @@ using System.Transactions;
 
 namespace OnlineJobPortal.Controllers
 {
-    [Route("[jobcontroller]")]
+    [Route("[controller]")]
     [ApiController]
     public class JobController : ControllerBase
     {
