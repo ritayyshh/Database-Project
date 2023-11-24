@@ -1,5 +1,4 @@
 import axios from 'axios';
-import getAllJobs from './requests';
 import React, { useEffect, useState } from "react";
 import {
     Accordion,
