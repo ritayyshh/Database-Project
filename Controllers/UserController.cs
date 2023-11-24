@@ -72,53 +72,43 @@ namespace OnlineJobPortal.Controllers
             return JsonConvert.SerializeObject(null);
         }
         [HttpPost("login")]
-        public IActionResult Login([FromBody] UserModel login)
+        public async Task<IActionResult> Login([FromBody] UserModel login)
         {
-            var authenticatedUser = AuthenticateUser(login.username, login.password);
+            try
+            {
+                var authenticatedUser = await AuthenticateUser(login.username, login.password);
 
-            if (authenticatedUser != null)
-            {
-                var token = GenerateToken(authenticatedUser);
-                return Ok(new { Token = token });
+                if (authenticatedUser != null)
+                {
+                    var token = GenerateToken(authenticatedUser);
+                    return Ok(new { Token = token });
+                }
+                else
+                {
+                    return Unauthorized();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return Unauthorized();
+                Console.WriteLine(ex.ToString());
+                return StatusCode(500, "Internal server error");
             }
+
         }
 
-        private UserModel AuthenticateUser(string username, string password)
-        {
-            using (SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString()))
-            {
-                connection.Open();
-                using (SqlCommand command = new SqlCommand($"SELECT * FROM Users WHERE username = '{username}' AND password = '{password}'", connection))
-                {
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (reader.HasRows)
-                        {
-                            reader.Read();
-                            UserModel user = new UserModel
-                            {
-                                user_id = Convert.ToInt32(reader["user_id"]),
-                                first_name = Convert.ToString(reader["first_name"]),
-                                middle_name = Convert.ToString(reader["middle_name"]),
-                                last_name = Convert.ToString(reader["last_name"]),
-                                username = Convert.ToString(reader["username"]),
-                                email = Convert.ToString(reader["email"]),
-                                password = Convert.ToString(reader["password"]),
-                                user_type = Convert.ToString(reader["user_type"])
-                            };
 
-                            return user;
-                        }
-                    }
-                }
+        private async Task<UserModel> AuthenticateUser(string username, string password)
+        {
+            var user = await userManager.FindByNameAsync(username);
+
+            if (user != null && await userManager.CheckPasswordAsync(user, password))
+            {
+                return user;
             }
 
             return null;
         }
+
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] UserModel newUser)
         {
@@ -144,7 +134,7 @@ namespace OnlineJobPortal.Controllers
             if (result.Succeeded)
             {
                 SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
-                string insertQuery = "INSERT INTO Books (user_id, first_name, middle_name, last_name, username, email, password, user_type)" +
+                string insertQuery = "INSERT INTO Users (user_id, first_name, middle_name, last_name, username, email, password, user_type)" +
                     " VALUES (@user_id, @first_name, @middle_name, @last_name, @username, @email, @password, @user_type)";
 
                 using (SqlCommand command = new SqlCommand(insertQuery, connection))
