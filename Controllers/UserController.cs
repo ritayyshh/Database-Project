@@ -16,6 +16,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 
 namespace OnlineJobPortal.Controllers
 {
@@ -24,11 +25,9 @@ namespace OnlineJobPortal.Controllers
     public class UserController : ControllerBase
     {
         private readonly IConfiguration configuration;
-        private readonly UserManager<UserModel> userManager;
-        public UserController(IConfiguration configuration, UserManager<UserModel> userManager)
+        public UserController(IConfiguration configuration)
         {
             this.configuration = configuration;
-            this.userManager = userManager;
         }
         private string GenerateToken(UserModel user)
         {
@@ -37,7 +36,7 @@ namespace OnlineJobPortal.Controllers
 
             var token = new JwtSecurityToken(
                 configuration["Jwt:Issuer"],
-                configuration["Jwt:Audience"], null, 
+                configuration["Jwt:Audience"], null,
                 expires: DateTime.Now.AddMinutes(1),
                 signingCredentials: credentials);
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -49,7 +48,7 @@ namespace OnlineJobPortal.Controllers
             SqlDataAdapter da = new SqlDataAdapter("Select * from Users", connection);
             DataTable dt = new DataTable();
             da.Fill(dt);
-            List <UserModel> Users = new List<UserModel>();
+            List<UserModel> Users = new List<UserModel>();
             if (dt.Rows.Count > 0)
             {
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -71,107 +70,108 @@ namespace OnlineJobPortal.Controllers
                 return JsonConvert.SerializeObject(Users);
             return JsonConvert.SerializeObject(null);
         }
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserModel login)
+        private List<UserModel> GetUsersList()
         {
-            try
+            using (SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString()))
             {
-                var authenticatedUser = await AuthenticateUser(login.username, login.password);
+                connection.Open();
 
-                if (authenticatedUser != null)
-                {
-                    var token = GenerateToken(authenticatedUser);
-                    return Ok(new { Token = token });
-                }
-                else
-                {
-                    return Unauthorized();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return StatusCode(500, "Internal server error");
-            }
+                string query = "SELECT * FROM Users";
 
+                List<UserModel> users = connection.Query<UserModel>(query).ToList();
+
+                return users;
+            }
         }
-
-
-        private async Task<UserModel> AuthenticateUser(string username, string password)
+        [HttpPost("login")]
+        public IActionResult Login(UserModel user)
         {
-            var user = await userManager.FindByNameAsync(username);
+            var authenticatedUser = AuthenticateUser(user);
 
-            if (user != null && await userManager.CheckPasswordAsync(user, password))
+            if (authenticatedUser != null)
             {
-                return user;
+                var token = GenerateToken(authenticatedUser);
+                return Ok(new { Token = token });
+            }
+            else
+            {
+                return Unauthorized();
+            }
+        }
+        private UserModel AuthenticateUser(UserModel user)
+        {
+            List<UserModel> _users = GetUsersList();
+            UserModel AuthenticatedUser = _users.FirstOrDefault(u => u.username == user.username);
+
+            if (AuthenticatedUser != null)
+            {
+                if (AuthenticatedUser.password == user.password)
+                    return AuthenticatedUser;
             }
 
             return null;
         }
-
         [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromBody] UserModel newUser)
+        public IActionResult SignUp(UserModel newUser)
         {
-            if (await IsUsernameTaken(newUser.username))
+            // Check if the username is already taken
+            if (IsUsernameTaken(newUser.username))
             {
                 return BadRequest("Username is already taken!");
             }
 
-            var user = new UserModel
+            // Hash the password (you should never store plaintext passwords)
+            newUser.password = newUser.password;
+
+            // Insert the user into the database
+            if (InsertUser(newUser))
             {
-                user_id = newUser.user_id,
-                first_name = newUser.first_name,
-                middle_name = newUser.middle_name,
-                last_name = newUser.last_name,
-                username = newUser.username,
-                email = newUser.email,
-                password = newUser.password,
-                user_type = newUser.user_type
-            };
-
-            var result = await userManager.CreateAsync(user, newUser.password);
-
-            if (result.Succeeded)
+                return Ok("User created successfully");
+            }
+            else
             {
-                SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString());
-                string insertQuery = "INSERT INTO Users (user_id, first_name, middle_name, last_name, username, email, password, user_type)" +
-                    " VALUES (@user_id, @first_name, @middle_name, @last_name, @username, @email, @password, @user_type)";
+                return BadRequest("Error in inserting data in the database!");
+            }
+        }
 
-                using (SqlCommand command = new SqlCommand(insertQuery, connection))
+        private bool IsUsernameTaken(string username)
+        {
+            List<UserModel> existingUsers = GetUsersList();
+            return existingUsers.Any(u => u.username == username);
+        }
+        private bool InsertUser(UserModel newUser)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString()))
                 {
                     connection.Open();
 
-                    command.Parameters.AddWithValue("@user_id", newUser.user_id);
-                    command.Parameters.AddWithValue("@first_name", newUser.first_name);
-                    command.Parameters.AddWithValue("@middle_name", newUser.middle_name);
-                    command.Parameters.AddWithValue("@last_name", newUser.last_name);
-                    command.Parameters.AddWithValue("@username", newUser.username);
-                    command.Parameters.AddWithValue("@email", newUser.email);
-                    command.Parameters.AddWithValue("@password", newUser.password);
-                    command.Parameters.AddWithValue("@user_type", newUser.user_type);
+                    string insertQuery = "INSERT INTO Users (first_name, middle_name, last_name, username, email, password, user_type)" +
+                        " VALUES (@first_name, @middle_name, @last_name, @username, @email, @password, @user_type)";
 
-                    int rowsAffected = command.ExecuteNonQuery();
+                    using (SqlCommand command = new SqlCommand(insertQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@first_name", newUser.first_name);
+                        command.Parameters.AddWithValue("@middle_name", newUser.middle_name);
+                        command.Parameters.AddWithValue("@last_name", newUser.last_name);
+                        command.Parameters.AddWithValue("@username", newUser.username);
+                        command.Parameters.AddWithValue("@email", newUser.email);
+                        command.Parameters.AddWithValue("@password", newUser.password); // Hashed password
+                        command.Parameters.AddWithValue("@user_type", newUser.user_type);
 
-                    if (rowsAffected > 0)
-                    {
-                        connection.Close();
-                        return Ok("User created successfully");
-                    }
-                    else
-                    {
-                        await userManager.DeleteAsync(user);
-                        return BadRequest("Error in inserting data in database!");
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        return rowsAffected > 0;
                     }
                 }
             }
-            else
-                return BadRequest(result.Errors);
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
-        private async Task<bool> IsUsernameTaken(string username)
-        {
-            var existingUser = await userManager.FindByNameAsync(username);
-            return existingUser != null;
-        }
     }
+
 }
