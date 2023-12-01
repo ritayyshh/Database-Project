@@ -1,16 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Security.Claims;
 using System.Text;
 using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using OnlineJobPortal.Models;
-using System;
 using System.IdentityModel.Tokens.Jwt;
 namespace OnlineJobPortal.Controllers
 {
