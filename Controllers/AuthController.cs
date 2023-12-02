@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using OnlineJobPortal.Models;
 using BCrypt.Net;
-using Microsoft.IdentityModel.Tokens;
 
 namespace OnlineJobPortal.Controllers
 {
@@ -16,16 +16,16 @@ namespace OnlineJobPortal.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly IConfiguration configuration;
+        private readonly IConfiguration _configuration;
 
         public AuthController(IConfiguration configuration)
         {
-            this.configuration = configuration;
+            _configuration = configuration;
         }
 
         private List<UserModel> GetUsersList()
         {
-            using (SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString()))
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
 
@@ -39,14 +39,14 @@ namespace OnlineJobPortal.Controllers
 
         private string GenerateToken(UserModel user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                configuration["Jwt:Issuer"],
-                configuration["Jwt:Audience"],
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
                 null,
-                expires: DateTime.Now.AddMinutes(1),
+                expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpirationMinutes"])),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -55,23 +55,28 @@ namespace OnlineJobPortal.Controllers
         [HttpPost("signup")]
         public IActionResult SignUp(UserModel newUser)
         {
-            // Check if the username is already taken
-            if (IsUsernameTaken(newUser.username))
+            try
             {
-                return BadRequest("Username is already taken!");
-            }
+                if (IsUsernameTaken(newUser.username))
+                {
+                    return BadRequest("Username is already taken!");
+                }
 
-            // Hash the password (using BCrypt for simplicity)
-            newUser.password = BCrypt.Net.BCrypt.HashPassword(newUser.password);
+                newUser.password = BCrypt.Net.BCrypt.HashPassword(newUser.password);
 
-            // Insert the user into the database
-            if (InsertUser(newUser))
-            {
-                return Ok("User created successfully");
+                if (InsertUser(newUser))
+                {
+                    return Ok("User created successfully");
+                }
+                else
+                {
+                    return BadRequest("Error in inserting data in the database!");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest("Error in inserting data in the database!");
+                // Log the exception
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
@@ -80,25 +85,14 @@ namespace OnlineJobPortal.Controllers
         {
             var authenticatedUser = AuthenticateUser(user);
 
-            if (authenticatedUser != null)
+            if (authenticatedUser != null && BCrypt.Net.BCrypt.Verify(user.password, authenticatedUser.password))
             {
-                // Verify the entered password against the hashed password from the database
-                if (BCrypt.Net.BCrypt.Verify(user.password, authenticatedUser.password))
-                {
-                    var token = GenerateToken(authenticatedUser);
-                    return Ok(new { Token = token });
-                }
-                else
-                {
-                    return Unauthorized("Invalid username or password");
-                }
+                var token = GenerateToken(authenticatedUser);
+                return Ok(new { Token = token });
             }
-            else
-            {
-                return Unauthorized("Invalid username or password");
-            }
-        }
 
+            return Unauthorized("Invalid username or password");
+        }
 
         private bool IsUsernameTaken(string username)
         {
@@ -110,7 +104,7 @@ namespace OnlineJobPortal.Controllers
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection").ToString()))
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
                     connection.Open();
 
@@ -124,7 +118,7 @@ namespace OnlineJobPortal.Controllers
                         command.Parameters.AddWithValue("@last_name", newUser.last_name);
                         command.Parameters.AddWithValue("@username", newUser.username);
                         command.Parameters.AddWithValue("@email", newUser.email);
-                        command.Parameters.AddWithValue("@password", newUser.password); // Hashed password
+                        command.Parameters.AddWithValue("@password", newUser.password);
                         command.Parameters.AddWithValue("@user_type", newUser.user_type);
 
                         int rowsAffected = command.ExecuteNonQuery();
@@ -135,15 +129,15 @@ namespace OnlineJobPortal.Controllers
             }
             catch (Exception ex)
             {
-                // Handle exception
+                // Log the exception
                 return false;
             }
         }
 
         private UserModel AuthenticateUser(UserModel user)
         {
-            List<UserModel> _users = GetUsersList();
-            return _users.Find(u => u.username == user.username);
+            List<UserModel> users = GetUsersList();
+            return users.Find(u => u.username == user.username);
         }
     }
 }
