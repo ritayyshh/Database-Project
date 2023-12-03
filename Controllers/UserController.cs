@@ -32,7 +32,7 @@ namespace OnlineJobPortal.Controllers
                     user.first_name = Convert.ToString(dt.Rows[i]["first_name"]);
                     user.middle_name = Convert.ToString(dt.Rows[i]["middle_name"]);
                     user.last_name = Convert.ToString(dt.Rows[i]["last_name"]);
-                    user.username = Convert.ToString(dt.Rows[i]["username"]);
+                    user._username = Convert.ToString(dt.Rows[i]["username"]);
                     user.email = Convert.ToString(dt.Rows[i]["email"]);
                     user.password = Convert.ToString(dt.Rows[i]["password"]);
                     user.user_type = Convert.ToString(dt.Rows[i]["user_type"]);

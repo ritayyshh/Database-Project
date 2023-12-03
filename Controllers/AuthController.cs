@@ -57,7 +57,7 @@ namespace OnlineJobPortal.Controllers
         {
             try
             {
-                if (IsUsernameTaken(newUser.username))
+                if (IsUsernameTaken(newUser._username))
                 {
                     return BadRequest("Username is already taken!");
                 }
@@ -93,11 +93,10 @@ namespace OnlineJobPortal.Controllers
 
             return Unauthorized("Invalid username or password");
         }
-
-        private bool IsUsernameTaken(string username)
+        private bool IsUsernameTaken(string username_)
         {
             List<UserModel> existingUsers = GetUsersList();
-            return existingUsers.Exists(u => u.username == username);
+            return existingUsers.Exists(u => u._username == username_);
         }
 
         private bool InsertUser(UserModel newUser)
@@ -116,7 +115,7 @@ namespace OnlineJobPortal.Controllers
                         command.Parameters.AddWithValue("@first_name", newUser.first_name);
                         command.Parameters.AddWithValue("@middle_name", newUser.middle_name);
                         command.Parameters.AddWithValue("@last_name", newUser.last_name);
-                        command.Parameters.AddWithValue("@username", newUser.username);
+                        command.Parameters.AddWithValue("@username", newUser._username);
                         command.Parameters.AddWithValue("@email", newUser.email);
                         command.Parameters.AddWithValue("@password", newUser.password);
                         command.Parameters.AddWithValue("@user_type", newUser.user_type);
@@ -137,7 +136,7 @@ namespace OnlineJobPortal.Controllers
         private UserModel AuthenticateUser(UserModel user)
         {
             List<UserModel> users = GetUsersList();
-            return users.Find(u => u.username == user.username);
+            return users.Find(u => u._username == user._username);
         }
     }
 }
